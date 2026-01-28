@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>🎮 El Laberinto de Decisiones - Meta Quest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- A-Frame 1.5.0 -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; }
+        
+        .screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+        }
+        
+        .screen.hidden { display: none; }
+        
+        .logo { font-size: 4em; margin-bottom: 15px; }
+        .title { font-size: 2em; margin-bottom: 10px; text-align: center; }
+        .subtitle { font-size: 1.1em; color: #aaa; text-align: center; max-width: 500px; margin-bottom: 25px; line-height: 1.5; }
+        
+        .quest-badge {
+            background: linear-gradient(45deg, #1877f2, #00d4ff);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 400px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        .instructions h3 { color: #4CAF50; margin-bottom: 15px; }
+        .instructions p { margin: 10px 0; color: #ddd; }
+        .instructions strong { color: #4CAF50; }
+        
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            color: white;
+            margin: 10px;
+        }
+        
+        .btn:hover { transform: scale(1.05); }
+        
+        .form-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 350px;
+            width: 90%;
+        }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: #4CAF50; margin-bottom: 5px; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1em;
+        }
+        .form-group select option { background: #1a1a2e; }
+        
+        .results-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            text-align: center;
+        }
+        
+        .hotline {
+            background: rgba(231, 76, 60, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .hotline-title { color: #e74c3c; font-weight: bold; margin-bottom: 8px; }
+        
+        #crisis-screen { background: linear-gradient(135deg, #c0392b 0%, #96281b 100%); }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 5px;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s;
+        }
+        
+        #scene { display: none; }
+        #scene.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <!-- PANTALLA INICIO -->
+    <div class="screen" id="start-screen">
+        <div class="logo">🧠</div>
+        <h1 class="title">El Laberinto de Decisiones</h1>
+        <div class="quest-badge">🥽 Meta Quest Edition</div>
+        
+        <p class="subtitle">
+            Vive un día como estudiante de secundaria. 
+            Toma decisiones y descubre más sobre ti.
+        </p>
+        
+        <div class="instructions">
+            <h3>🎮 Cómo jugar</h3>
+            <p>📍 <strong>Mira hacia las opciones</strong> - gira tu cabeza</p>
+            <p>👆 <strong>Con control:</strong> Apunta y presiona el GATILLO</p>
+            <p>✋ <strong>Con manos:</strong> Apunta y haz PINCH</p>
+            <p>👀 <strong>Sin control:</strong> Mira fijo 2 segundos</p>
+        </div>
+        
+        <button class="btn" onclick="showDataScreen()">🚀 Comenzar</button>
+    </div>
+
+    <!-- PANTALLA DATOS -->
+    <div class="screen hidden" id="data-screen">
+        <h2 class="title">📝 Datos</h2>
+        <p class="subtitle">Información confidencial</p>
+        
+        <div class="form-container">
+            <div class="form-group">
+                <label>Alias</label>
+                <input type="text" id="alias" placeholder="Ej: Gamer123">
+            </div>
+            <div class="form-group">
+                <label>Edad</label>
+                <select id="edad">
+                    <option value="">Selecciona</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                    <option value="16">16</option>
+                    <option value="17">17</option>
+                    <option value="18">18+</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Género</label>
+                <select id="genero">
+                    <option value="">Selecciona</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                    <option value="O">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Grado</label>
+                <select id="grado">
+                    <option value="">Selecciona</option>
+                    <option value="1">1° Sec</option>
+                    <option value="2">2° Sec</option>
+                    <option value="3">3° Sec</option>
+                </select>
+            </div>
+            <button class="btn" onclick="startVR()" style="width:100%">🎮 Entrar</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA RESULTADOS -->
+    <div class="screen hidden" id="results-screen">
+        <div class="results-card">
+            <div style="font-size:4em">✨</div>
+            <h2 class="title">¡Gracias!</h2>
+            <p class="subtitle" id="results-message">
+                Completaste la experiencia. Si necesitas hablar con alguien, hay personas que quieren escucharte.
+            </p>
+            <div class="hotline">
+                <div class="hotline-title">📞 Líneas de ayuda 24/7</div>
+                <div>Línea de la Vida: <strong>800-911-2000</strong></div>
+                <div>SAPTEL: <strong>55 5259-8121</strong></div>
+            </div>
+            <button class="btn" onclick="location.reload()">🔄 Reiniciar</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA CRISIS -->
+    <div class="screen hidden" id="crisis-screen">
+        <div class="results-card">
+            <div style="font-size:4em">💚</div>
+            <h2 class="title">Queremos ayudarte</h2>
+            <p class="subtitle">
+                Notamos que podrías necesitar apoyo. <strong>No estás solo/a.</strong>
+            </p>
+            <div class="hotline" style="background:rgba(255,255,255,0.2)">
+                <div class="hotline-title" style="color:#fff">📞 Llama ahora</div>
+                <div style="font-size:1.4em"><strong>800-911-2000</strong></div>
+                <div>Línea de la Vida (gratuita)</div>
+            </div>
+            <button class="btn" style="background:#fff;color:#c0392b" onclick="showResults()">Continuar</button>
+        </div>
+    </div>
+
+    <!-- ===== ESCENA VR ===== -->
+    <a-scene 
+        id="scene"
+        vr-mode-ui="enabled: true"
+        webxr="optionalFeatures: local-floor, hand-tracking"
+        renderer="antialias: true"
+        loading-screen="dotsColor: #4CAF50; backgroundColor: #1a1a2e">
+        
+        <a-assets>
+            <audio id="sfx-click" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" preload="auto"></audio>
+            <audio id="sfx-hover" src="https://assets.mixkit.co/sfx/preview/mixkit-gate-latch-click-1924.mp3" preload="auto"></audio>
+        </a-assets>
+
+        <!-- CIELO -->
+        <a-sky id="sky" color="#1a1a2e"></a-sky>
+        
+        <!-- PISO -->
+        <a-circle 
+            id="floor"
+            rotation="-90 0 0" 
+            radius="10" 
+            color="#16213e"
+            material="shader: flat">
+        </a-circle>
+
+        <!-- ===== CAMERA RIG FIJO (SIN MOVIMIENTO) ===== -->
+        <a-entity id="rig" position="0 0 0">
+            
+            <!-- Cámara - solo puede girar, no moverse -->
+            <a-entity 
+                id="camera" 
+                camera="active: true"
+                position="0 1.6 0"
+                look-controls="pointerLockEnabled: false; magicWindowTrackingEnabled: true">
+                
+                <!-- Cursor de mirada (para cuando no hay controles) -->
+                <a-entity
+                    id="gaze-cursor"
+                    cursor="fuse: true; fuseTimeout: 2000"
+                    raycaster="objects: .clickable; far: 15"
+                    position="0 0 -1"
+                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+                    material="color: #4CAF50; shader: flat; opacity: 0.7">
+                    <a-circle radius="0.003" color="#fff" position="0 0 0.001"></a-circle>
+                    
+                    <!-- Anillo de carga -->
+                    <a-ring
+                        id="fuse-loader"
+                        radius-inner="0.025"
+                        radius-outer="0.035"
+                        color="#4CAF50"
+                        theta-start="0"
+                        theta-length="0"
+                        opacity="0.8"
+                        position="0 0 -0.001">
+                    </a-ring>
+                </a-entity>
+            </a-entity>
+
+            <!-- Control izquierdo -->
+            <a-entity
+                id="leftHand"
+                laser-controls="hand: left; model: true; defaultModelColor: #4CAF50"
+                raycaster="objects: .clickable; far: 15; lineColor: #4CAF50; lineOpacity: 0.5">
+            </a-entity>
+
+            <!-- Control derecho -->
+            <a-entity
+                id="rightHand"
+                laser-controls="hand: right; model: true; defaultModelColor: #4CAF50"
+                raycaster="objects: .clickable; far: 15; lineColor: #4CAF50; lineOpacity: 0.5">
+            </a-entity>
+        </a-entity>
+
+        <!-- CONTENEDOR DE ESCENARIOS -->
+        <a-entity id="scenario-container"></a-entity>
+
+        <!-- LUCES -->
+        <a-light type="ambient" color="#fff" intensity="0.6"></a-light>
+        <a-light type="directional" color="#fff" intensity="0.4" position="0 2 1"></a-light>
+
+        <!-- SONIDO -->
+        <a-entity id="sound-player" position="0 1.6 0"></a-entity>
+    </a-scene>
+
+    <script>
+    // ==========================================
+    // ESCENARIOS
+    // ==========================================
+    const scenarios = [
+        {
+            id: 1,
+            chapter: "Capítulo 1",
+            title: "LA MAÑANA",
+            skyColor: "#2c3e50",
+            floorColor: "#1a252f",
+            situation: "Te despiertas y escuchas a tus papás discutiendo fuerte en la cocina.",
+            options: [
+                { text: "Salir a ver", detail: "Intentar calmarlos", color: "#3498db", scores: { familia: 0 } },
+                { text: "Quedarme en mi cuarto", detail: "Esperar que termine", color: "#9b59b6", scores: { familia: 1, emocional: 1 } },
+                { text: "Salir y gritarles", detail: "Que se callen", color: "#e74c3c", scores: { familia: 2, conducta: 2 } },
+                { text: "Ponerme audífonos", detail: "Ignorarlos", color: "#f39c12", scores: { familia: 1 } }
+            ]
+        },
+        {
+            id: 2,
+            chapter: "Capítulo 1",
+            title: "EL DESAYUNO",
+            skyColor: "#34495e",
+            floorColor: "#2c3e50",
+            situation: "Tu mamá te pregunta por qué tienes mala cara. Tu papá sigue de mal humor.",
+            options: [
+                { text: "Decir que estoy bien", detail: "Desayunar tranquilo", color: "#3498db", scores: { familia: 0 } },
+                { text: "Contestar de mala gana", detail: "Déjenme en paz", color: "#e74c3c", scores: { familia: 1, conducta: 1 } },
+                { text: "Explicar cómo me siento", detail: "Sus gritos me despertaron", color: "#2ecc71", scores: { familia: 0 } },
+                { text: "Irme sin desayunar", detail: "No quiero estar aquí", color: "#9b59b6", scores: { familia: 1, emocional: 1 } }
+            ]
+        },
+        {
+            id: 3,
+            chapter: "Capítulo 2",
+            title: "CAMINO A LA ESCUELA",
+            skyColor: "#5dade2",
+            floorColor: "#566573",
+            situation: "Unos compañeros te invitan a faltar a clases para ir a una fiesta con alcohol.",
+            options: [
+                { text: "Decir que no", detail: "Seguir a la escuela", color: "#2ecc71", scores: { sustancias: 0, educativo: 0 } },
+                { text: "Decir 'tal vez después'", detail: "Quedar bien", color: "#f39c12", scores: { sustancias: 1, educativo: 1 } },
+                { text: "Ir con ellos", detail: "Suena divertido", color: "#e74c3c", scores: { sustancias: 2, educativo: 2 } },
+                { text: "Inventar una excusa", detail: "Me castigan", color: "#3498db", scores: { sustancias: 0, educativo: 0 } }
+            ]
+        },
+        {
+            id: 4,
+            chapter: "Capítulo 2",
+            title: "EN LA ENTRADA",
+            skyColor: "#85c1e9",
+            floorColor: "#5d6d7e",
+            situation: "Ves que están molestando a un compañero. Le quitan sus cosas y se burlan.",
+            options: [
+                { text: "Ayudarlo", detail: "Decirles que lo dejen", color: "#2ecc71", scores: { conducta: 0, amigos: 0 } },
+                { text: "Buscar a un maestro", detail: "Que intervenga", color: "#3498db", scores: { conducta: 0 } },
+                { text: "Pasar de largo", detail: "No es mi problema", color: "#9b59b6", scores: { amigos: 1, emocional: 1 } },
+                { text: "Unirme a las burlas", detail: "Para caer bien", color: "#e74c3c", scores: { conducta: 2, amigos: 1 } }
+            ]
+        },
+        {
+            id: 5,
+            chapter: "Capítulo 3",
+            title: "EL RECREO",
+            skyColor: "#58d68d",
+            floorColor: "#1e8449",
+            situation: "Estás solo/a en una banca. Un compañero te ofrece un vape.",
+            options: [
+                { text: "Rechazarlo", detail: "No me interesa", color: "#2ecc71", scores: { sustancias: 0 } },
+                { text: "Probarlo", detail: "Solo una vez", color: "#e74c3c", scores: { sustancias: 2, amigos: 1 } },
+                { text: "Preguntar qué tiene", detail: "Más información", color: "#f39c12", scores: { sustancias: 1 } },
+                { text: "Irme sin decir nada", detail: "Evitar la situación", color: "#3498db", scores: { sustancias: 0, amigos: 1 } }
+            ]
+        },
+        {
+            id: 6,
+            chapter: "Capítulo 3",
+            title: "EL EXAMEN",
+            skyColor: "#7d3c98",
+            floorColor: "#4a235a",
+            situation: "Reprobaste un examen y el maestro lo anuncia frente a todos. Algunos se ríen.",
+            options: [
+                { text: "Estudiar más", detail: "La próxima me irá mejor", color: "#2ecc71", scores: { educativo: 0, emocional: 0 } },
+                { text: "Pensar que da igual", detail: "Ya reprobé", color: "#9b59b6", scores: { educativo: 2, emocional: 1 } },
+                { text: "Enojarme mucho", detail: "Quiero aventar cosas", color: "#e74c3c", scores: { conducta: 2 } },
+                { text: "Sentir que todo sale mal", detail: "No tiene caso", color: "#95a5a6", scores: { emocional: 2, mental: 1 } }
+            ]
+        },
+        {
+            id: 7,
+            chapter: "Capítulo 4",
+            title: "REDES SOCIALES",
+            skyColor: "#2c3e50",
+            floorColor: "#1a252f",
+            situation: "Publicaron una foto tuya sin permiso con comentarios burlones. Tiene muchos likes.",
+            options: [
+                { text: "Reportar y hablar con adulto", detail: "Alguien de confianza", color: "#2ecc71", scores: { emocional: 0 } },
+                { text: "Publicar algo peor de ellos", detail: "Venganza", color: "#e74c3c", scores: { conducta: 2, emocional: 1 } },
+                { text: "Borrar mis redes", detail: "No quiero volver a la escuela", color: "#95a5a6", scores: { emocional: 2, mental: 1 } },
+                { text: "Ignorarlo", detail: "Esperar que se olviden", color: "#3498db", scores: { emocional: 1 } }
+            ]
+        },
+        {
+            id: 8,
+            chapter: "Capítulo 4",
+            title: "TU RELACIÓN",
+            skyColor: "#ec7063",
+            floorColor: "#922b21",
+            situation: "Tu novio/a revisa tu celular constantemente y se enoja si hablas con otras personas.",
+            options: [
+                { text: "Decir que no está bien", detail: "Poner límites", color: "#2ecc71", scores: { violencia: 0, autoestima: 0 } },
+                { text: "Darle mi contraseña", detail: "Para que no se enoje", color: "#e74c3c", scores: { violencia: 2, autoestima: 2 } },
+                { text: "Terminar la relación", detail: "Eso no es amor", color: "#3498db", scores: { violencia: 0 } },
+                { text: "Pensar que es normal", detail: "Me quiere por eso", color: "#f39c12", scores: { violencia: 2, autoestima: 1 } }
+            ]
+        },
+        {
+            id: 9,
+            chapter: "Capítulo 5",
+            title: "EL RETO",
+            skyColor: "#e67e22",
+            floorColor: "#935116",
+            situation: "Tus amigos te retan a hacer algo peligroso. Dicen que eres cobarde si no lo haces.",
+            options: [
+                { text: "Decir que no me importa", detail: "No me arriesgo", color: "#2ecc71", scores: { conducta: 0 } },
+                { text: "Hacerlo", detail: "Para no quedar mal", color: "#e74c3c", scores: { conducta: 2, amigos: 1 } },
+                { text: "Proponer otra cosa", detail: "Algo menos peligroso", color: "#3498db", scores: { conducta: 0 } },
+                { text: "Irme", detail: "No quiero estar aquí", color: "#f39c12", scores: { amigos: 1 } }
+            ]
+        },
+        {
+            id: 10,
+            chapter: "Capítulo 5",
+            title: "EN CASA DE NOCHE",
+            skyColor: "#1a1a2e",
+            floorColor: "#0d0d1a",
+            situation: "Tus papás siguen molestos y te ignoran. Te sientes invisible.",
+            options: [
+                { text: "Ir a mi cuarto", detail: "Mañana será otro día", color: "#3498db", scores: { familia: 1 } },
+                { text: "Intentar hablar", detail: "Preguntarles qué pasa", color: "#2ecc71", scores: { familia: 0 } },
+                { text: "Sentir que no les importo", detail: "Nunca me hacen caso", color: "#95a5a6", scores: { familia: 1, emocional: 2, mental: 1 } },
+                { text: "Encerrarme con llave", detail: "No quiero ver a nadie", color: "#9b59b6", scores: { familia: 1, emocional: 1 } }
+            ]
+        },
+        {
+            id: 11,
+            chapter: "Capítulo 6",
+            title: "PENSANDO EN EL FUTURO",
+            skyColor: "#0c0c1a",
+            floorColor: "#050510",
+            situation: "Piensas en tu vida. ¿Cómo te imaginas en 5 años?",
+            options: [
+                { text: "Tengo metas claras", detail: "Sé lo que quiero", color: "#2ecc71", scores: { mental: 0 } },
+                { text: "No estoy seguro/a", detail: "Pero tengo tiempo", color: "#3498db", scores: { mental: 0 } },
+                { text: "Me da igual", detail: "No pienso en eso", color: "#f39c12", scores: { mental: 1, educativo: 1 } },
+                { text: "No creo llegar lejos", detail: "Nada me sale bien", color: "#95a5a6", scores: { mental: 2, emocional: 2 } }
+            ]
+        },
+        {
+            id: 12,
+            chapter: "Capítulo Final",
+            title: "A SOLAS EN LA NOCHE",
+            skyColor: "#000000",
+            floorColor: "#050505",
+            situation: "Son las 2am. No puedes dormir. Piensas en todo lo que pasó y en tu vida.",
+            options: [
+                { text: "Pensar en lo bueno", detail: "Hay cosas que valen", color: "#2ecc71", scores: { mental: 0, suicidio: 0 } },
+                { text: "Sentirme triste", detail: "Pero mañana será otro día", color: "#3498db", scores: { mental: 1, suicidio: 0 } },
+                { text: "Nadie me entiende", detail: "Estarían mejor sin mí", color: "#c0392b", scores: { mental: 3, suicidio: 3 }, crisis: true },
+                { text: "Buscar una distracción", detail: "Música, leer...", color: "#9b59b6", scores: { mental: 0, suicidio: 0 } }
+            ]
+        }
+    ];
+
+    // ==========================================
+    // ESTADO
+    // ==========================================
+    let userData = {};
+    let gameState = {
+        currentScenario: 0,
+        scores: { familia: 0, sustancias: 0, educativo: 0, amigos: 0, emocional: 0, conducta: 0, violencia: 0, autoestima: 0, mental: 0, suicidio: 0 },
+        responses: [],
+        startTime: null,
+        alertaCrisis: false
+    };
+
+    // ==========================================
+    // NAVEGACIÓN
+    // ==========================================
+    function showDataScreen() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('data-screen').classList.remove('hidden');
+    }
+
+    function startVR() {
+        userData = {
+            alias: document.getElementById('alias').value || 'Anónimo',
+            edad: document.getElementById('edad').value || 'NE',
+            genero: document.getElementById('genero').value || 'NE',
+            grado: document.getElementById('grado').value || 'NE',
+            timestamp: new Date().toISOString()
+        };
+        gameState.startTime = Date.now();
+        
+        document.getElementById('data-screen').classList.add('hidden');
+        document.getElementById('progress-bar').style.display = 'block';
+        
+        const scene = document.getElementById('scene');
+        scene.classList.add('active');
+        scene.style.display = 'block';
+        
+        // Configurar eventos de fuse
+        setupFuseEvents();
+        
+        // Cargar primer escenario después de un momento
+        setTimeout(() => {
+            loadScenario(0);
+            // Intentar entrar a VR
+            if (scene.enterVR) {
+                scene.enterVR();
+            }
+        }, 500);
+    }
+
+    function showCrisis() {
+        gameState.alertaCrisis = true;
+        exitVRAndShow('crisis-screen');
+    }
+
+    function showResults() {
+        document.getElementById('crisis-screen').classList.add('hidden');
+        exitVRAndShow('results-screen');
+        generateReport();
+    }
+
+    function exitVRAndShow(screenId) {
+        const scene = document.getElementById('scene');
+        if (scene.is && scene.is('vr-mode')) {
+            scene.exitVR();
+        }
+        scene.style.display = 'none';
+        document.getElementById('progress-bar').style.display = 'none';
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    // ==========================================
+    // CONFIGURAR EVENTOS DE FUSE (animación del cursor)
+    // ==========================================
+    function setupFuseEvents() {
+        const cursor = document.getElementById('gaze-cursor');
+        const fuseLoader = document.getElementById('fuse-loader');
+        
+        if (cursor && fuseLoader) {
+            cursor.addEventListener('fusing', function(e) {
+                fuseLoader.setAttribute('animation', {
+                    property: 'geometry.thetaLength',
+                    from: 0,
+                    to: 360,
+                    dur: 2000,
+                    easing: 'linear'
+                });
+            });
+            
+            cursor.addEventListener('mouseleave', function(e) {
+                fuseLoader.removeAttribute('animation');
+                fuseLoader.setAttribute('geometry', 'thetaLength', 0);
+            });
+        }
+    }
+
+    // ==========================================
+    // CARGAR ESCENARIO
+    // ==========================================
+    function loadScenario(index) {
+        if (index >= scenarios.length) {
+            showResults();
+            return;
+        }
+        
+        const scenario = scenarios[index];
+        const container = document.getElementById('scenario-container');
+        const sky = document.getElementById('sky');
+        const floor = document.getElementById('floor');
+        
+        // Actualizar progreso
+        document.getElementById('progress-fill').style.width = (index / scenarios.length * 100) + '%';
+        
+        // Limpiar
+        container.innerHTML = '';
+        
+        // Cambiar colores
+        sky.setAttribute('color', scenario.skyColor);
+        floor.setAttribute('color', scenario.floorColor);
+        
+        // ===== PANEL PRINCIPAL (ARRIBA) =====
+        const mainPanel = document.createElement('a-entity');
+        mainPanel.setAttribute('position', '0 2.5 -3');
+        
+        // Fondo
+        const bg = document.createElement('a-plane');
+        bg.setAttribute('width', '4.5');
+        bg.setAttribute('height', '1.8');
+        bg.setAttribute('color', '#000');
+        bg.setAttribute('opacity', '0.85');
+        mainPanel.appendChild(bg);
+        
+        // Capítulo
+        const chapter = document.createElement('a-text');
+        chapter.setAttribute('value', scenario.chapter);
+        chapter.setAttribute('position', '0 0.6 0.01');
+        chapter.setAttribute('align', 'center');
+        chapter.setAttribute('color', '#4CAF50');
+        chapter.setAttribute('width', '3');
+        mainPanel.appendChild(chapter);
+        
+        // Título
+        const title = document.createElement('a-text');
+        title.setAttribute('value', scenario.title);
+        title.setAttribute('position', '0 0.3 0.01');
+        title.setAttribute('align', 'center');
+        title.setAttribute('color', '#fff');
+        title.setAttribute('width', '4');
+        mainPanel.appendChild(title);
+        
+        // Situación
+        const situation = document.createElement('a-text');
+        situation.setAttribute('value', wrapText(scenario.situation, 45));
+        situation.setAttribute('position', '0 -0.15 0.01');
+        situation.setAttribute('align', 'center');
+        situation.setAttribute('color', '#ccc');
+        situation.setAttribute('width', '3.2');
+        situation.setAttribute('baseline', 'top');
+        mainPanel.appendChild(situation);
+        
+        container.appendChild(mainPanel);
+        
+        // ===== OPCIONES (2x2 FRENTE AL USUARIO) =====
+        const positions = [
+            { x: -1.3, y: 1.0, z: -3 },  // Arriba izquierda
+            { x: 1.3, y: 1.0, z: -3 },   // Arriba derecha
+            { x: -1.3, y: -0.2, z: -3 }, // Abajo izquierda
+            { x: 1.3, y: -0.2, z: -3 }   // Abajo derecha
+        ];
+        
+        scenario.options.forEach((option, i) => {
+            const pos = positions[i];
+            const letter = String.fromCharCode(65 + i);
+            
+            // Grupo
+            const optionGroup = document.createElement('a-entity');
+            optionGroup.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+            
+            // Panel clickeable
+            const panel = document.createElement('a-plane');
+            panel.setAttribute('width', '2.2');
+            panel.setAttribute('height', '0.9');
+            panel.setAttribute('color', '#1a1a2e');
+            panel.setAttribute('opacity', '0.95');
+            panel.setAttribute('class', 'clickable');
+            panel.setAttribute('data-option', i);
+            panel.setAttribute('data-scenario', index);
+            
+            // Borde de color
+            const border = document.createElement('a-plane');
+            border.setAttribute('position', '-1.05 0 -0.01');
+            border.setAttribute('width', '0.1');
+            border.setAttribute('height', '0.85');
+            border.setAttribute('color', option.color);
+            optionGroup.appendChild(border);
+            
+            // Eventos
+            panel.addEventListener('mouseenter', function() {
+                this.setAttribute('color', option.color);
+                this.setAttribute('scale', '1.08 1.08 1');
+                playSound();
+            });
+            
+            panel.addEventListener('mouseleave', function() {
+                this.setAttribute('color', '#1a1a2e');
+                this.setAttribute('scale', '1 1 1');
+            });
+            
+            panel.addEventListener('click', function() {
+                selectOption(index, i);
+            });
+            
+            optionGroup.appendChild(panel);
+            
+            // Letra
+            const letterEl = document.createElement('a-text');
+            letterEl.setAttribute('value', letter);
+            letterEl.setAttribute('position', '-0.8 0.2 0.02');
+            letterEl.setAttribute('color', option.color);
+            letterEl.setAttribute('width', '4');
+            optionGroup.appendChild(letterEl);
+            
+            // Texto
+            const text = document.createElement('a-text');
+            text.setAttribute('value', wrapText(option.text, 20));
+            text.setAttribute('position', '0.1 0.1 0.02');
+            text.setAttribute('align', 'center');
+            text.setAttribute('color', '#fff');
+            text.setAttribute('width', '2.2');
+            optionGroup.appendChild(text);
+            
+            // Detalle
+            const detail = document.createElement('a-text');
+            detail.setAttribute('value', option.detail);
+            detail.setAttribute('position', '0.1 -0.25 0.02');
+            detail.setAttribute('align', 'center');
+            detail.setAttribute('color', '#888');
+            detail.setAttribute('width', '1.8');
+            optionGroup.appendChild(detail);
+            
+            container.appendChild(optionGroup);
+        });
+        
+        // Indicador de progreso
+        const progress = document.createElement('a-text');
+        progress.setAttribute('value', `${index + 1} / ${scenarios.length}`);
+        progress.setAttribute('position', '0 -1 -3');
+        progress.setAttribute('align', 'center');
+        progress.setAttribute('color', '#4CAF50');
+        progress.setAttribute('width', '2');
+        container.appendChild(progress);
+    }
+
+    // ==========================================
+    // SELECCIONAR OPCIÓN
+    // ==========================================
+    function selectOption(scenarioIndex, optionIndex) {
+        const scenario = scenarios[scenarioIndex];
+        const option = scenario.options[optionIndex];
+        
+        // Guardar respuesta
+        gameState.responses.push({
+            scenarioId: scenario.id,
+            title: scenario.title,
+            optionIndex: optionIndex,
+            optionText: option.text,
+            timestamp: Date.now() - gameState.startTime
+        });
+        
+        // Sumar puntuaciones
+        if (option.scores) {
+            for (let key in option.scores) {
+                if (gameState.scores[key] !== undefined) {
+                    gameState.scores[key] += option.scores[key];
+                }
+            }
+        }
+        
+        // Verificar crisis
+        if (option.crisis) {
+            showCrisis();
+            return;
+        }
+        
+        // Siguiente escenario
+        gameState.currentScenario = scenarioIndex + 1;
+        
+        // Pequeña pausa antes de cargar siguiente
+        setTimeout(() => loadScenario(gameState.currentScenario), 400);
+    }
+
+    // ==========================================
+    // UTILIDADES
+    // ==========================================
+    function playSound() {
+        const sound = document.getElementById('sound-player');
+        if (sound) {
+            sound.setAttribute('sound', 'src: #sfx-hover; autoplay: true; volume: 0.3');
+        }
+    }
+
+    function wrapText(text, maxChars) {
+        if (!text) return '';
+        const words = text.split(' ');
+        let lines = [], line = '';
+        words.forEach(word => {
+            if ((line + ' ' + word).trim().length <= maxChars) {
+                line = (line + ' ' + word).trim();
+            } else {
+                if (line) lines.push(line);
+                line = word;
+            }
+        });
+        if (line) lines.push(line);
+        return lines.join('\n');
+    }
+
+    // ==========================================
+    // REPORTE
+    // ==========================================
+    function generateReport() {
+        const totalTime = Math.round((Date.now() - gameState.startTime) / 1000);
+        const totalScore = Object.values(gameState.scores).reduce((a, b) => a + b, 0);
+        
+        let riskLevel = 'BAJO';
+        if (gameState.alertaCrisis || gameState.scores.suicidio >= 2) riskLevel = 'CRÍTICO';
+        else if (totalScore >= 15) riskLevel = 'ALTO';
+        else if (totalScore >= 8) riskLevel = 'MODERADO';
+        
+        console.log('=== REPORTE TAMIZAJE VR ===');
+        console.log('Usuario:', userData);
+        console.log('Puntuaciones:', gameState.scores);
+        console.log('Total:', totalScore, '- Riesgo:', riskLevel);
+        console.log('Tiempo:', totalTime + 's');
+        console.log('Respuestas:', gameState.responses);
+        
+        // Guardar
+        try {
+            const reports = JSON.parse(localStorage.getItem('tamizaje_reports') || '[]');
+            reports.push({
+                userData,
+                scores: gameState.scores,
+                totalScore,
+                riskLevel,
+                responses: gameState.responses,
+                totalTime,
+                alertaCrisis: gameState.alertaCrisis,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('tamizaje_reports', JSON.stringify(reports));
+            console.log('✓ Reporte guardado');
+        } catch (e) { console.warn('Error:', e); }
+        
+        if (gameState.alertaCrisis) {
+            document.getElementById('results-message').innerHTML = 
+                '<strong style="color:#e74c3c;">Se detectó que podrías necesitar apoyo.</strong><br><br>Un profesional te contactará pronto.';
+        }
+    }
+
+    // Exportar
+    window.exportReports = function() {
+        const reports = JSON.parse(localStorage.getItem('tamizaje_reports') || '[]');
+        const blob = new Blob([JSON.stringify(reports, null, 2)], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'reportes_' + new Date().toISOString().split('T')[0] + '.json';
+        a.click();
+        console.log('Exportados:', reports.length, 'reportes');
+    };
+
+    console.log('🥽 TAMIZAJE VR - META QUEST');
+    console.log('Para exportar: exportReports()');
+    </script>
+</body>
+</html>
